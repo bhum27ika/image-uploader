@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uplōd — Image Sharing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --ink: #0f0e0c;
+      --ink-soft: #4a4845;
+      --ink-muted: #9a9895;
+      --paper: #f8f6f1;
+      --paper-warm: #f0ede6;
+      --paper-card: #fffefb;
+      --accent: #c8440e;
+      --accent-soft: #f2e8e2;
+      --accent-hover: #a83608;
+      --border: #e0dbd2;
+      --border-strong: #c8c2b8;
+      --success: #2d6a4f;
+      --success-bg: #e8f5ef;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: "DM Sans", sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+    }
+
+    /* ── Header ── */
+    header {
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      background: var(--paper-card);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .logo-mark {
+      width: 32px;
+      height: 32px;
+      background: var(--ink);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-name {
+      font-family: "DM Serif Display", serif;
+      font-size: 22px;
+      color: var(--ink);
+      letter-spacing: -0.5px;
+    }
+
+    .nav-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-soft);
+      text-decoration: none;
+      padding: 7px 14px;
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      cursor: pointer;
+      background: transparent;
+      transition: all 0.15s;
+    }
+
+    .nav-link:hover { background: var(--paper-warm); border-color: var(--border-strong); }
+
+    /* ── Main ── */
+    main {
+      padding: 60px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px;
+      margin-bottom: 48px;
+    }
+
+    .tab {
+      padding: 8px 22px;
+      border-radius: 99px;
+      border: none;
+      background: transparent;
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--paper-card);
+      color: var(--ink);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* ── Upload panel ── */
+    .panel { width: 100%; max-width: 520px; display: none; }
+    .panel.active { display: block; }
+
+    .panel-title {
+      font-family: "DM Serif Display", serif;
+      font-size: 32px;
+      letter-spacing: -0.8px;
+      margin-bottom: 8px;
+      line-height: 1.1;
+    }
+
+    .panel-title em { font-style: italic; color: var(--accent); }
+
+    .panel-sub {
+      font-size: 14px;
+      color: var(--ink-muted);
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      position: relative;
+      border: 2px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 52px 32px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--paper-card);
+      overflow: hidden;
+    }
+
+    .drop-zone::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 100%, var(--accent-soft) 0%, transparent 70%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.drag-over::before { opacity: 1; }
+
+    .drop-zone.drag-over {
+      border-color: var(--accent);
+      border-style: solid;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      width: 56px;
+      height: 56px;
+      background: var(--paper-warm);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      position: relative;
+      transition: transform 0.2s;
+    }
+
+    .drop-zone:hover .drop-icon { transform: translateY(-2px); }
+
+    .drop-text-main {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--ink);
+      margin-bottom: 6px;
+    }
+
+    .drop-text-main span { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+
+    .drop-text-sub { font-size: 12px; color: var(--ink-muted); }
+
+    /* File selected state */
+    .file-selected {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 12px 16px;
+      background: var(--paper-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .file-selected.show { display: flex; }
+
+    .file-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      display: none;
+    }
+
+    .file-thumb.show { display: block; }
+
+    .file-info { flex: 1; min-width: 0; }
+    .file-info-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-info-size { font-size: 12px; color: var(--ink-muted); margin-top: 2px; }
+
+    .file-remove {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-muted);
+      transition: all 0.15s;
+      flex-shrink: 0;
+    }
+
+    .file-remove:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+    /* Progress */
+    .progress-track {
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      margin-top: 16px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .progress-track.show { display: block; }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+
+    /* Upload button */
+    .btn-upload {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--ink);
+      color: var(--paper);
+      font-family: "DM Sans", sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background 0.2s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+
+    .btn-upload:hover { background: #1e1d1a; }
+    .btn-upload:active { transform: scale(0.99); }
+    .btn-upload:disabled { background: #c4c0b8; cursor: not-allowed; }
+
+    /* ── Result Card ── */
+    .result-card {
+      display: none;
+      background: var(--paper-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-top: 24px;
+      animation: slideUp 0.3s ease;
+    }
+
+    .result-card.show { display: block; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-preview {
+      width: 100%;
+      max-height: 280px;
+      object-fit: contain;
+      background: var(--paper-warm);
+      display: block;
+    }
+
+    .result-body { padding: 20px; }
+
+    .result-success {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--success);
+      background: var(--success-bg);
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .meta-item { font-size: 12px; color: var(--ink-muted); }
+    .meta-item strong { color: var(--ink); font-weight: 500; display: block; }
+
+    .link-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+
+    .link-row input {
+      flex: 1;
+      border: none;
+      padding: 11px 14px;
+      font-size: 13px;
+      color: var(--ink-soft);
+      background: var(--paper);
+      font-family: "DM Sans", sans-serif;
+      outline: none;
+      min-width: 0;
+    }
+
+    .link-row button {
+      padding: 11px 16px;
+      border: none;
+      border-left: 1px solid var(--border);
+      background: var(--paper-warm);
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .link-row button:hover { background: var(--border); }
+
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn-action {
+      padding: 10px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--paper-card);
+      font-family: "DM Sans", sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-soft);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .btn-action:hover { background: var(--paper-warm); border-color: var(--border-strong); color: var(--ink); }
+    .btn-action svg { display: block; }
+
+    .btn-again {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: "DM Sans", sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-again:hover { background: var(--paper-warm); color: var(--ink); }
+
+    /* ── Gallery Panel ── */
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    .gallery-item {
+      position: relative;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: var(--paper-warm);
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .gallery-item:hover { transform: scale(1.02); }
+    .gallery-item:hover .gallery-overlay { opacity: 1; }
+
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15,14,12,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .gal-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.7);
+      background: rgba(255,255,255,0.15);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: background 0.15s;
+    }
+
+    .gal-btn:hover { background: rgba(255,255,255,0.3); }
+
+    .gallery-empty {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--ink-muted);
+      font-size: 14px;
+    }
+
+    .gallery-empty svg { margin: 0 auto 16px; display: block; opacity: 0.3; }
+
+    .gallery-loading {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px;
+      color: var(--ink-muted);
+      font-size: 14px;
+    }
+
+    /* ── Status banner ── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      margin-bottom: 20px;
+    }
+
+    .status-bar.error { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+    .status-bar.warning { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+    .status-bar.hidden { display: none; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(60px);
+      background: var(--ink);
+      color: var(--paper);
+      padding: 11px 22px;
+      border-radius: 99px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: transform 0.25s, opacity 0.25s;
+      pointer-events: none;
+      z-index: 999;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--ink-muted);
+      border-top: 1px solid var(--border);
+    }
+
+    /* ── Server config warning ── */
+    #serverBanner { display: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 560px) {
+      header { padding: 16px 20px; }
+      main { padding: 36px 16px; }
+      .panel-title { font-size: 26px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a class="logo" href="#">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M9 2L15.5 5.75V12.25L9 16L2.5 12.25V5.75L9 2Z" fill="white" fill-opacity="0.15"/>
+        <path d="M9 2L15.5 5.75V12.25L9 16L2.5 12.25V5.75L9 2Z" stroke="white" stroke-width="1.5"/>
+        <circle cx="9" cy="9" r="2.5" fill="white"/>
+      </svg>
+    </div>
+    <span class="logo-name">Uplōd</span>
+  </a>
+  <button class="nav-link" onclick="switchTab('gallery'); loadGallery()">View gallery</button>
+</header>
+
+<main>
+
+  <!-- Server config warning -->
+  <div class="status-bar warning" id="serverBanner">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Backend not reachable. Make sure your Node.js server is running on port 3000.
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab active" id="tab-upload" onclick="switchTab('upload')">Upload</button>
+    <button class="tab" id="tab-gallery" onclick="switchTab('gallery'); loadGallery()">Gallery</button>
+  </div>
+
+  <!-- ── Upload Panel ── -->
+  <div class="panel active" id="panel-upload">
+    <h1 class="panel-title">Drop an image,<br><em>get a link.</em></h1>
+    <p class="panel-sub">Upload any image — we store it securely on Cloudinary and give you a shareable link instantly.</p>
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileInput" accept="image/*" />
+      <div class="drop-icon">
+        <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="#c8440e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="17 8 12 3 7 8"/>
+          <line x1="12" y1="3" x2="12" y2="15"/>
+        </svg>
+      </div>
+      <p class="drop-text-main"><span>Click to browse</span> or drag & drop</p>
+      <p class="drop-text-sub">PNG · JPG · GIF · WEBP · SVG — up to 20 MB</p>
+    </div>
+
+    <!-- File preview row -->
+    <div class="file-selected" id="fileSelected">
+      <img class="file-thumb" id="fileThumbnail" src="" alt="" />
+      <div class="file-info">
+        <div class="file-info-name" id="fileName">—</div>
+        <div class="file-info-size" id="fileSize">—</div>
+      </div>
+      <button class="file-remove" onclick="clearFile()" title="Remove">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="1" y1="1" x2="11" y2="11"/><line x1="11" y1="1" x2="1" y2="11"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-track" id="progressTrack">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Upload button -->
+    <button class="btn-upload" id="uploadBtn" onclick="uploadImage()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      Upload Image
+    </button>
+
+    <!-- Result Card -->
+    <div class="result-card" id="resultCard">
+      <img class="result-preview" id="resultImg" src="" alt="Uploaded image" />
+      <div class="result-body">
+        <div class="result-success">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Image uploaded successfully
+        </div>
+
+        <div class="result-meta">
+          <div class="meta-item"><strong id="metaFormat">—</strong>Format</div>
+          <div class="meta-item"><strong id="metaSize">—</strong>Size</div>
+          <div class="meta-item"><strong id="metaDims">—</strong>Dimensions</div>
+        </div>
+
+        <div class="link-row">
+          <input type="text" id="imageUrl" readonly />
+          <button onclick="copyLink()">Copy link</button>
+        </div>
+
+        <div class="result-actions">
+          <button class="btn-action" onclick="openImage()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Open
+          </button>
+          <button class="btn-action" onclick="shareWhatsApp()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+            WhatsApp
+          </button>
+          <button class="btn-action" onclick="nativeShare()">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            Share
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-again" id="btnAgain" onclick="resetUploader()" style="display:none">
+      ↑ Upload another image
+    </button>
+  </div>
+
+  <!-- ── Gallery Panel ── -->
+  <div class="panel" id="panel-gallery" style="max-width:680px">
+    <h1 class="panel-title">Your <em>uploads.</em></h1>
+    <p class="panel-sub">All images stored in Cloudinary. Click any image to copy its link.</p>
+    <div class="gallery-grid" id="galleryGrid">
+      <div class="gallery-loading">Loading images…</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>Built with Node.js + Cloudinary · Uplōd</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const API = "http://localhost:3000/api";
+  let currentUrl = "";
+  let currentFile = null;
+
+  // ── Boot: check server ──────────────────────────────────────────────────────
+  async function checkServer() {
+    try {
+      const r = await fetch(`${API}/health`);
+      if (!r.ok) throw new Error();
+      document.getElementById("serverBanner").style.display = "none";
+    } catch {
+      document.getElementById("serverBanner").style.display = "flex";
+    }
+  }
+
+  checkServer();
+
+  // ── Tabs ────────────────────────────────────────────────────────────────────
+  function switchTab(name) {
+    ["upload", "gallery"].forEach(t => {
+      document.getElementById(`panel-${t}`).classList.toggle("active", t === name);
+      document.getElementById(`tab-${t}`).classList.toggle("active", t === name);
+    });
+  }
+
+  // ── File input ──────────────────────────────────────────────────────────────
+  document.getElementById("fileInput").addEventListener("change", function () {
+    handleFile(this.files[0]);
+  });
+
+  const zone = document.getElementById("dropZone");
+  zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("drag-over"); });
+  zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+  zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("drag-over");
+    const file = e.dataTransfer.files[0];
+    if (file?.type.startsWith("image/")) handleFile(file);
+    else showToast("Only image files are supported");
+  });
+
+  function handleFile(file) {
+    if (!file) return;
+    currentFile = file;
+
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileSize").textContent = formatBytes(file.size);
+    document.getElementById("fileSelected").classList.add("show");
+
+    // Local thumbnail preview
+    const reader = new FileReader();
+    reader.onload = e => {
+      const thumb = document.getElementById("fileThumbnail");
+      thumb.src = e.target.result;
+      thumb.classList.add("show");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function clearFile() {
+    currentFile = null;
+    document.getElementById("fileInput").value = "";
+    document.getElementById("fileSelected").classList.remove("show");
+    document.getElementById("fileThumbnail").classList.remove("show");
+    document.getElementById("fileThumbnail").src = "";
+  }
+
+  // ── Upload ──────────────────────────────────────────────────────────────────
+  async function uploadImage() {
+    if (!currentFile) { showToast("Please select an image first"); return; }
+
+    const btn = document.getElementById("uploadBtn");
+    const progressTrack = document.getElementById("progressTrack");
+    const progressFill = document.getElementById("progressFill");
+
+    btn.disabled = true;
+    btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Uploading…`;
+    progressTrack.classList.add("show");
+
+    // Fake progress animation
+    let prog = 0;
+    const tick = setInterval(() => {
+      prog = Math.min(prog + Math.random() * 15, 88);
+      progressFill.style.width = prog + "%";
+    }, 200);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", currentFile);
+
+      const res = await fetch(`${API}/upload`, { method: "POST", body: formData });
+      const data = await res.json();
+
+      clearInterval(tick);
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Upload failed");
+      }
+
+      progressFill.style.width = "100%";
+      setTimeout(() => progressTrack.classList.remove("show"), 600);
+
+      currentUrl = data.url;
+      showResult(data);
+
+    } catch (err) {
+      clearInterval(tick);
+      progressTrack.classList.remove("show");
+      progressFill.style.width = "0%";
+      showToast(err.message || "Upload failed");
+      btn.disabled = false;
+      btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Image`;
+    }
+  }
+
+  function showResult(data) {
+    document.getElementById("resultImg").src = data.url;
+    document.getElementById("imageUrl").value = data.url;
+    document.getElementById("metaFormat").textContent = data.format?.toUpperCase() || "—";
+    document.getElementById("metaSize").textContent = formatBytes(data.size);
+    document.getElementById("metaDims").textContent = data.width && data.height ? `${data.width}×${data.height}` : "—";
+
+    document.getElementById("resultCard").classList.add("show");
+    document.getElementById("dropZone").style.display = "none";
+    document.getElementById("fileSelected").classList.remove("show");
+    document.getElementById("btnAgain").style.display = "block";
+
+    const btn = document.getElementById("uploadBtn");
+    btn.style.display = "none";
+  }
+
+  function resetUploader() {
+    currentUrl = "";
+    currentFile = null;
+    document.getElementById("fileInput").value = "";
+    document.getElementById("fileSelected").classList.remove("show");
+    document.getElementById("fileThumbnail").classList.remove("show");
+    document.getElementById("resultCard").classList.remove("show");
+    document.getElementById("dropZone").style.display = "block";
+    document.getElementById("btnAgain").style.display = "none";
+    document.getElementById("progressFill").style.width = "0%";
+
+    const btn = document.getElementById("uploadBtn");
+    btn.style.display = "flex";
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Upload Image`;
+  }
+
+  // ── Share actions ───────────────────────────────────────────────────────────
+  function copyLink() {
+    if (!currentUrl) return;
+    navigator.clipboard.writeText(currentUrl)
+      .then(() => showToast("Link copied to clipboard"))
+      .catch(() => { document.getElementById("imageUrl").select(); document.execCommand("copy"); showToast("Link copied"); });
+  }
+
+  function openImage() {
+    if (currentUrl) window.open(currentUrl, "_blank");
+  }
+
+  function shareWhatsApp() {
+    if (!currentUrl) return;
+    window.open(`https://wa.me/?text=${encodeURIComponent("Here's an image: " + currentUrl)}`, "_blank");
+  }
+
+  function nativeShare() {
+    if (!currentUrl) return;
+    if (navigator.share) {
+      navigator.share({ title: "Shared image", url: currentUrl }).catch(() => {});
+    } else {
+      copyLink();
+    }
+  }
+
+  // ── Gallery ─────────────────────────────────────────────────────────────────
+  let galleryLoaded = false;
+
+  async function loadGallery() {
+    if (galleryLoaded) return;
+    const grid = document.getElementById("galleryGrid");
+    grid.innerHTML = `<div class="gallery-loading">Loading images…</div>`;
+
+    try {
+      const res = await fetch(`${API}/images`);
+      const data = await res.json();
+
+      if (!res.ok) throw new Error(data.error);
+
+      galleryLoaded = true;
+
+      if (!data.images.length) {
+        grid.innerHTML = `<div class="gallery-empty">
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          No images uploaded yet
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = data.images.map(img => `
+        <div class="gallery-item" title="${img.public_id}">
+          <img src="${img.url}" alt="${img.public_id}" loading="lazy" onerror="this.parentElement.style.display='none'" />
+          <div class="gallery-overlay">
+            <button class="gal-btn" onclick="copyToClipboard('${img.url}')" title="Copy link">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+            <button class="gal-btn" onclick="window.open('${img.url}','_blank')" title="Open">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            </button>
+            <button class="gal-btn" onclick="deleteImage('${img.public_id}', this)" title="Delete">
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+            </button>
+          </div>
+        </div>
+      `).join("");
+
+    } catch (err) {
+      grid.innerHTML = `<div class="gallery-empty">Failed to load images. Is the server running?</div>`;
+    }
+  }
+
+  async function deleteImage(publicId, btn) {
+    const item = btn.closest(".gallery-item");
+    if (!confirm("Delete this image from Cloudinary?")) return;
+
+    try {
+      const res = await fetch(`${API}/images/${encodeURIComponent(publicId)}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        item.remove();
+        galleryLoaded = false;
+        showToast("Image deleted");
+      } else {
+        showToast(data.error || "Delete failed");
+      }
+    } catch {
+      showToast("Delete failed");
+    }
+  }
+
+  function copyToClipboard(url) {
+    navigator.clipboard.writeText(url).then(() => showToast("Link copied")).catch(() => showToast("Copy failed"));
+  }
+
+  // ── Helpers ─────────────────────────────────────────────────────────────────
+  function formatBytes(bytes) {
+    if (!bytes) return "—";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1048576).toFixed(1) + " MB";
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+</script>
+</body>
+</html>
